@@ -2,6 +2,7 @@
  * This is the banker.
 */
 #include<stdio.h>
+#include<pthread.h>
 #include"helper.c"
 // This is a data structure to store all data related to an instance of the banker.
 struct BankerData
@@ -12,18 +13,35 @@ struct BankerData
     int** resourcesDemandMatrix;
     int** resourcesAllocatedMatrix;
     int** resourcesRequiredMatrix;
+
+    pthread_mutex_t concurrencyLock;
 };
 /*
     Takes a BankerData structure and corresponding data to initialize it.
     Return:  1 on succesfull initialisation.
             -1 if availableResourcesCount is less than 1.
+            -2 if resourcesRequiredMatrix values are not a difference of resourcesDemandMatrix and resourcesAllocatedMatrix values.
     TODO: Check if given values are correct.
 */
-int init(struct BankerData *data, int availableResourcesCount,int processCount, 
+int Banker_init(struct BankerData *data, int availableResourcesCount,int processCount, 
         int* availableResourcesArray, int** resourcesDemandMatrix, int** resourcesAllocatedMatrix, 
         int** resourcesRequiredMatrix)
 {
     if(availableResourcesCount<1)return -1;
+    // Check if resourcesRequiredMatrix has valid values.
+    int i,j,v;
+    for(i=0;i<processCount;++i)
+    {
+        for(j=0;j<availableResourcesCount;++j)
+        {
+            v = (resourcesDemandMatrix[i][j]-resourcesAllocatedMatrix[i][j]);
+            if(v<0 || resourcesRequiredMatrix[i][j]!=v)return -2;
+        }
+    }
+    // All is good.
+    // Initialise the concurrencyLock of our BankerData structure.
+    pthread_mutex_init(&(data->concurrencyLock), NULL);
+    // Store the data in our BankerData structure.
     data->processCount = processCount;
     data->availableResourcesCount = availableResourcesCount;
     data->availableResourcesArray = availableResourcesArray;
@@ -32,11 +50,26 @@ int init(struct BankerData *data, int availableResourcesCount,int processCount,
     data->resourcesRequiredMatrix = resourcesRequiredMatrix;
     return 1;
 }
+
+/*
+    Gives resource to the caller if it is available and does not lead to an unsafe state.
+    Parameters: banker,         the BankerData structure storing the current state of the banker
+                resourceIndex,  the index number of the resource to allocate to the caller
+*/
+int Banker_requestResource(struct BankerData *banker, int resourceIndex, int resourceValue)
+{
+    // Use a mutex lock to revent concurrent resource allocation.
+    pthread_mutex_lock(&(banker->concurrencyLock));
+    
+    // Unlock the mutex lock to allow other threads to allocate resources.
+    pthread_mutex_unlock(&(banker->concurrencyLock));
+}
+
 /*
     Used for debugging.
     Prints the data of the given banker structure.
 */
-void displayBanker(struct BankerData *data)
+void Banker_displayBanker(struct BankerData *data)
 {
     int i,j,k;
     printf("\tBanker Data\n");
