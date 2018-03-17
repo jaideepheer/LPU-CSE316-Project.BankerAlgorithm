@@ -71,12 +71,14 @@ void Banker_destroy(struct BankerData* banker)
     Parameters: banker,         the BankerData structure storing the current state of the banker.
                 resourceIndex,  the index number of the resource to free.
                 resourceCount,  the number of resource instances return to the banker.
+    Return:  1, on successfull freeing of the resource.
+            -1, if the passed processIndex or resourceIndex is invalid.
 */
-void Banker_freeResource(struct BankerData *banker,int processIndex, int resourceIndex, int resourceCount)
+int Banker_freeResource(struct BankerData *banker,int processIndex, int resourceIndex, int resourceCount)
 {
     // Check for the validity of the resourceIndex and the processIndex. Return if any of them is invalid.
     if(resourceIndex<0 || resourceIndex>(banker->availableResourcesCount)-1
-        || processIndex<0 || processIndex>(banker->processCount)-1) return;
+        || processIndex<0 || processIndex>(banker->processCount)-1) return -1;
 
     if(resourceCount > banker->resourcesAllocatedMatrix[processIndex][resourceIndex])
         resourceCount = banker->resourcesAllocatedMatrix[processIndex][resourceIndex];
@@ -90,6 +92,7 @@ void Banker_freeResource(struct BankerData *banker,int processIndex, int resourc
 
     // Unlock the mutex lock to allow other threads to access the banker's data.
     pthread_mutex_unlock(&(banker->concurrencyLock));
+    return 1;
 }
 
 /*

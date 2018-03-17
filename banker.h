@@ -19,7 +19,7 @@ struct BankerData
 // Function Declaritions.
 int Banker_init(struct BankerData*, int, int, int*, int**, int**);
 int Banker_requestResource(struct BankerData*, int, int, int);
-void Banker_freeResource(struct BankerData*, int, int, int);
+int Banker_freeResource(struct BankerData*, int, int, int);
 int* Banker_getSafeSequence(struct BankerData*);
 void Banker_destroy(struct BankerData*);
 
