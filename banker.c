@@ -12,37 +12,53 @@
     Takes a BankerData structure and corresponding data to initialize it.
     Return:  1 on succesfull initialisation.
             -1 if availableResourcesCount is less than 1.
-            -2 if resourcesRequiredMatrix values are not a difference of resourcesDemandMatrix and resourcesAllocatedMatrix values.
-            -3 if sum of allocated and required resources for a process exceeds the max available resources.
     TODO: Check if given values are correct.
 */
 int Banker_init(struct BankerData *data, int availableResourcesCount,int processCount, 
-        int* availableResourcesArray, int** resourcesDemandMatrix, int** resourcesAllocatedMatrix, 
-        int** resourcesRequiredMatrix)
+        int* maxResourcesArray, int** resourcesDemandMatrix, int** resourcesAllocatedMatrix)
 {
     if(availableResourcesCount<1)return -1;
-    // Check if resourcesRequiredMatrix has valid values.
-    int i,j,v;
-    for(i=0;i<processCount;++i)
-    {
-        for(j=0;j<availableResourcesCount;++j)
-        {
-            v = (resourcesDemandMatrix[i][j]-resourcesAllocatedMatrix[i][j]);
-            if(v<0 || resourcesRequiredMatrix[i][j]!=v)return -2;
-            if((resourcesAllocatedMatrix[i][j]+resourcesRequiredMatrix[i][j])>availableResourcesArray[j])return -3;
-        }
-    }
     // All is good.
     // Initialise the concurrencyLock of our BankerData structure.
     pthread_mutex_init(&(data->concurrencyLock), NULL);
     // Store the data in our BankerData structure.
     data->processCount = processCount;
     data->availableResourcesCount = availableResourcesCount;
-    data->availableResourcesArray = availableResourcesArray;
+    data->maxResourcesArray = maxResourcesArray;
+    // Compute the available resources array.
+    data->availableResourcesArray = (int*)malloc((availableResourcesCount)*sizeof(int));
+    int r,sum,p;
+    for(r=0;r<availableResourcesCount;++r)
+    {
+        sum = 0;
+        for(p=0;p<processCount;++p)
+        {
+            sum += resourcesAllocatedMatrix[p][r];
+        }
+        data->availableResourcesArray[r] = maxResourcesArray[r] - sum;
+    }
     data->resourcesDemandMatrix = resourcesDemandMatrix;
     data->resourcesAllocatedMatrix = resourcesAllocatedMatrix;
-    data->resourcesRequiredMatrix = resourcesRequiredMatrix;
+    // Compute resourcesRequiredMatrix
+    data->resourcesRequiredMatrix = (int**)malloc(processCount * sizeof(int));
+    for(p=0;p<processCount;++p)
+    {
+        data->resourcesRequiredMatrix[p] = (int*)malloc(availableResourcesCount*sizeof(int));
+    }
+    for(p=0;p<processCount;++p)
+    {
+        for(r=0;r<availableResourcesCount;++r)
+        {
+            data->resourcesRequiredMatrix[p][r] = data->resourcesDemandMatrix[p][r] - data->resourcesAllocatedMatrix[p][r];
+        }
+    }
     return 1;
+}
+
+void Banker_destroy(struct BankerData* banker)
+{
+    free(banker->availableResourcesArray);
+    free(banker->resourcesRequiredMatrix);
 }
 
 /*
@@ -53,9 +69,10 @@ int Banker_init(struct BankerData *data, int availableResourcesCount,int process
 
     Return:  1 on successfull resource allocation.
             -1 if the resourceIndex is invalid.
-            -2 if process index is invalid.
+            -2 if processIndex is invalid.
             -3 if process is requests more resources than its max requirement or resourceCount is less than 0.
             -4 if resource allocation cannot be done due to unsafe state.
+            -5 if resources requested are currently unavailable.
 */
 int Banker_requestResource(struct BankerData *banker,int processIndex, int resourceIndex, int resourceCount)
 {
@@ -63,6 +80,8 @@ int Banker_requestResource(struct BankerData *banker,int processIndex, int resou
     if(resourceIndex<0 || resourceIndex>(banker->availableResourcesCount)-1)return -1;
     if(processIndex<0 || processIndex>(banker->processCount)-1)return -2;
     if(resourceCount>(banker->resourcesDemandMatrix[processIndex][resourceIndex]) || resourceCount<0)return -3;
+    // Check if requested resources are available.
+    if(resourceCount>banker->availableResourcesArray[resourceIndex])return -5;
 
     // This will be returned ny the function.
     int returnCode = 1;
@@ -103,11 +122,85 @@ int Banker_requestResource(struct BankerData *banker,int processIndex, int resou
 int* Banker_getSafeSequence(struct BankerData *banker)
 {
     // Allocate memory to store the safe sequence.
-    int* safeSequence = (int*)malloc((banker->processCount)*sizeof(int));
+    int* safeSequence = calloc(banker->processCount,sizeof(int));
+    int safeSequenceMarker = 0;
 
-    // No safe sequence found.
-    free(safeSequence);
-    return NULL;
+    // This stores the no. of processes remaining for simulated execution.
+    int remainingProcesses = banker->processCount;
+
+    // This set to 0 if there is a deadlock during the simulation.
+    int isStatePseudoSafe;
+    int p, r;
+
+    // This stores the execution state of each process while simulation.
+    int *hasFinished = calloc(banker->processCount,sizeof(int));
+
+    // This is a temporary array used in the simulation.
+    int *availableResourcesArray = malloc((banker->availableResourcesCount)*sizeof(int));
+    // Copy banker data into temporary array
+    for(r=0;r<banker->availableResourcesCount;++r)
+        availableResourcesArray[r]=banker->availableResourcesArray[r];
+    
+
+    // Simulate resource allocation to find a safe sequence.
+    while(remainingProcesses>0)
+    {
+        isStatePseudoSafe = 0;
+        for(p=0;p<banker->processCount;++p)
+        {
+            // Simulate this process if it has not yet finished.
+            if(hasFinished[p]!=1)
+            {
+                // Check if this process can allocate all resources.
+                for(r=0;r<banker->availableResourcesCount;++r)
+                {
+                    if(banker->resourcesRequiredMatrix[p][r]>availableResourcesArray[r])
+                    {
+                        // This process cannot allocate all resources.
+                        break;
+                    }
+                }
+                if(r==banker->availableResourcesCount)
+                {
+                    // This process can allocate all resources.
+                    // Simulate...
+                    // After process finishes, it 
+                    // Returns its resources to the banker
+                    for(r=0;r<banker->availableResourcesCount;++r)
+                    {
+                        availableResourcesArray[r] += banker->resourcesAllocatedMatrix[p][r];
+                    }
+
+                    // Decrements remainingProcesses
+                    --remainingProcesses;
+                    // Sets its execution state
+                    hasFinished[p]=1;
+                    // Appends itself to the safe sequence.
+                    safeSequence[safeSequenceMarker] = p;
+                    ++safeSequence;
+
+                    // Sets the current banker's state to pseudo safe
+                    isStatePseudoSafe = 1;
+                }
+            }
+        }
+        // No process executed in this iteration, the system resulted in a deadlock.
+        if(isStatePseudoSafe != 1)break;
+    }
+
+    // Free data structures.
+    free(hasFinished);
+    free(availableResourcesArray);
+
+    // Check if some processes caused a deadlock.
+    if(remainingProcesses>0)
+    {
+        // No safe sequence found.
+        free(safeSequence);
+        return NULL;
+    }
+    // Else return the safe sequence.
+    return safeSequence;
 }
 
 /*

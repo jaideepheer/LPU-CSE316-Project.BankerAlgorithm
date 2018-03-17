@@ -7,6 +7,7 @@ struct BankerData
 {
     int availableResourcesCount;
     int processCount;
+    int* maxResourcesArray;
     int* availableResourcesArray;
     int** resourcesDemandMatrix;
     int** resourcesAllocatedMatrix;
@@ -16,7 +17,7 @@ struct BankerData
     pthread_mutex_t concurrencyLock;
 };
 // Function Declaritions.
-int Banker_init(struct BankerData*, int, int, int*, int**, int**, int**);
+int Banker_init(struct BankerData*, int, int, int*, int**, int**);
 int Banker_requestResource(struct BankerData*, int, int, int);
 int* Banker_getSafeSequence(struct BankerData*);
 
