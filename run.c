@@ -1,6 +1,6 @@
 #include<stdio.h>
 #include"banker.h"
-#include"helper.c"
+#include"helper.h"
 int main()
 {
     printf("Welcome\nThis is the banker's algorithm implementation.\n");
