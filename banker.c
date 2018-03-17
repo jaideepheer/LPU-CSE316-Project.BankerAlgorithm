@@ -55,6 +55,10 @@ int Banker_init(struct BankerData *data, int availableResourcesCount,int process
     return 1;
 }
 
+/*
+    Frees the dynamically allocated members of a BankerData structure.
+    The passed BankerData must not be used after it is destroyed.
+*/
 void Banker_destroy(struct BankerData* banker)
 {
     free(banker->availableResourcesArray);
@@ -62,10 +66,38 @@ void Banker_destroy(struct BankerData* banker)
 }
 
 /*
+    Frees the resource from the caller and returns it to the banker.
+    This is a thread safe function. It uses mutex locks to acomplish thread safety.
+    Parameters: banker,         the BankerData structure storing the current state of the banker.
+                resourceIndex,  the index number of the resource to free.
+                resourceCount,  the number of resource instances return to the banker.
+*/
+void Banker_freeResource(struct BankerData *banker,int processIndex, int resourceIndex, int resourceCount)
+{
+    // Check for the validity of the resourceIndex and the processIndex. Return if any of them is invalid.
+    if(resourceIndex<0 || resourceIndex>(banker->availableResourcesCount)-1
+        || processIndex<0 || processIndex>(banker->processCount)-1) return;
+
+    if(resourceCount > banker->resourcesAllocatedMatrix[processIndex][resourceIndex])
+        resourceCount = banker->resourcesAllocatedMatrix[processIndex][resourceIndex];
+    // Use a mutex lock to prevent concurrent access to the banker's data.
+    pthread_mutex_lock(&(banker->concurrencyLock));
+
+    // Free the resource and return it to the banker.
+    // NOTE: the processes requiredRequiredMatrix is not updated as once the process frees its resources, it cannot reallocate them.
+    banker->resourcesAllocatedMatrix[processIndex][resourceIndex] -= resourceCount;
+    banker->availableResourcesArray[resourceIndex] += resourceCount;
+
+    // Unlock the mutex lock to allow other threads to access the banker's data.
+    pthread_mutex_unlock(&(banker->concurrencyLock));
+}
+
+/*
     Gives resource to the caller if it is available and does not lead to an unsafe state.
-    Parameters: banker,         the BankerData structure storing the current state of the banker
-                resourceIndex,  the index number of the resource to allocate to the caller
-                resourceCount,  the numbers of resource instances to allocate to the caller
+    This is a thread safe function. It uses mutex locks to acomplish thread safety.
+    Parameters: banker,         the BankerData structure storing the current state of the banker.
+                resourceIndex,  the index number of the resource to allocate to the caller.
+                resourceCount,  the number of resource instances to allocate to the caller.
 
     Return:  1 on successfull resource allocation.
             -1 if the resourceIndex is invalid.
@@ -86,7 +118,7 @@ int Banker_requestResource(struct BankerData *banker,int processIndex, int resou
     // This will be returned ny the function.
     int returnCode = 1;
     
-    // Use a mutex lock to revent concurrent resource allocation.
+    // Use a mutex lock to prevent concurrent resource allocation.
     pthread_mutex_lock(&(banker->concurrencyLock));
 
     // Allocate the resources to simulate if the banker will be in a safe state.
