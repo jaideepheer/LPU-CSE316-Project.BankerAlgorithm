@@ -21,6 +21,7 @@ struct BankerData
     Return:  1 on succesfull initialisation.
             -1 if availableResourcesCount is less than 1.
             -2 if resourcesRequiredMatrix values are not a difference of resourcesDemandMatrix and resourcesAllocatedMatrix values.
+            -3 if sum of allocated and required resources for a process exceeds the max available resources.
     TODO: Check if given values are correct.
 */
 int Banker_init(struct BankerData *data, int availableResourcesCount,int processCount, 
@@ -36,6 +37,7 @@ int Banker_init(struct BankerData *data, int availableResourcesCount,int process
         {
             v = (resourcesDemandMatrix[i][j]-resourcesAllocatedMatrix[i][j]);
             if(v<0 || resourcesRequiredMatrix[i][j]!=v)return -2;
+            if((resourcesAllocatedMatrix[i][j]+resourcesRequiredMatrix[i][j])>availableResourcesArray[j])return -3;
         }
     }
     // All is good.
@@ -55,14 +57,31 @@ int Banker_init(struct BankerData *data, int availableResourcesCount,int process
     Gives resource to the caller if it is available and does not lead to an unsafe state.
     Parameters: banker,         the BankerData structure storing the current state of the banker
                 resourceIndex,  the index number of the resource to allocate to the caller
+                resourceCount,  the numbers of resource instances to allocate to the caller
+
+    Return:  1 on successfull resource allocation
+            -1 if the resourceIndex is invalid
+            -2 if resource allocation cannot be done due to unsafe state
 */
-int Banker_requestResource(struct BankerData *banker, int resourceIndex, int resourceValue)
+int Banker_requestResource(struct BankerData *banker, int resourceIndex, int resourceCount)
 {
     // Use a mutex lock to revent concurrent resource allocation.
     pthread_mutex_lock(&(banker->concurrencyLock));
-    
+
+    int* safeSequence = Banker_getSafeSequence(banker);
+    if(safeSequence == NULL)return -2;
+
     // Unlock the mutex lock to allow other threads to allocate resources.
     pthread_mutex_unlock(&(banker->concurrencyLock));
+}
+
+/*
+    Checks if the passed BankerData is in a safe state and returns the safe sequence.
+    Return:  NULL, if the BankerData is not in a safe state i.e. there is no safe sequence
+             int*, array of size processCount(of the BankerData passed) storing index of processes in safe sequence
+*/
+int* Banker_getSafeSequence(struct BankerData *banker)
+{
 }
 
 /*
