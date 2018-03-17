@@ -19,11 +19,11 @@ int main()
             },
         //resourcesAllocatedMatrix
         (int*[]){
-            (int[]){0,1,0},
+            (int[]){0,0,0},
             (int[]){3,1,4}
             }
         );
     printf("init code = %d\n",initcode);
     Banker_displayBanker(&bd);
-    printf("Safe status: %d", Banker_getSafeSequence(&bd));
+    printf("Safe status: %d\n", Banker_requestResource(&bd, 0, 1, 1));
 }

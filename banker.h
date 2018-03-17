@@ -17,9 +17,10 @@ struct BankerData
     pthread_mutex_t concurrencyLock;
 };
 // Function Declaritions.
-int Banker_init(struct BankerData*, int, int, int*, int**, int**);
-int Banker_requestResource(struct BankerData*, int, int, int);
-int Banker_freeResource(struct BankerData*, int, int, int);
+int Banker_init(struct BankerData *data, int availableResourcesCount,int processCount, 
+        int* maxResourcesArray, int** resourcesDemandMatrix, int** resourcesAllocatedMatrix);
+int Banker_requestResource(struct BankerData* banker,int processIndex, int resourceIndex, int resourceCount);
+int Banker_freeResource(struct BankerData* banker,int processIndex, int resourceIndex, int resourceCount);
 int* Banker_getSafeSequence(struct BankerData*);
 void Banker_destroy(struct BankerData*);
 
