@@ -1,5 +1,5 @@
 #include<stdio.h>
-#include"banker.c"
+#include"banker.h"
 #include"helper.c"
 int main()
 {
@@ -9,9 +9,9 @@ int main()
     struct BankerData bd;
     //TODO: fix this
     //to2DArray((1,2),(3,4));
-    init(&bd,3,2,
+    int initcode = Banker_init(&bd,3,2,
         //AvailableResourceArray
-        (int[]){1, 2, 3},
+        (int[]){10, 20, 30},
         //resourcesDemandMatrix
         (int*[]){
             (int[]){1,1,1},
@@ -24,9 +24,10 @@ int main()
             },
         //resourcesRequiredMatrix
         (int*[]){
-            (int[]){0,0,0},
-            (int[]){0,8,0}
+            (int[]){1,1,1},
+            (int[]){3,2,4}
             }
         );
-    displayBanker(&bd);
+    printf("init code = %d\n",initcode);
+    Banker_displayBanker(&bd);
 }
