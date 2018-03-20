@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include"banker.h"
 #include"helper.h"
+#include"UI.h"
 int main()
 {
     printf("Welcome\nThis is the banker's algorithm implementation.\n");
@@ -26,4 +27,14 @@ int main()
     printf("init code = %d\n",initcode);
     Banker_displayBanker(&bd);
     printf("Safe status: %d\n", Banker_requestResource(&bd, 0, 1, 1));
+
+     //   system("clear");
+    struct UIframe f;
+    UIframe_init2(&f,10,5);
+    char *c = "12345678";
+    UIframe_addLine(&f, c, 8, 0.5);
+    UIframe_print(&f, 0, 0);
+    //system("clear");
+    UIframe_addLine(&f, c, 4, 0.5);
+    UIframe_print(&f, 10, 4);
 }
