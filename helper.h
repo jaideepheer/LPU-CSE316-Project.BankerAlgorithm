@@ -1,6 +1,10 @@
 #ifndef __HELPER_H
 #define __HELPER_H
+
 // Helping code. :)
+
+// Debug print...
+#define DBG printf("[DebugMarker]\n");
 // This gives the length of a non-dynamically defined array.
 #define arraylength(T) sizeof(T)/sizeof(T[0])
 

@@ -139,12 +139,14 @@ int Banker_requestResource(struct BankerData *banker,int processIndex, int resou
         banker->resourcesRequiredMatrix[processIndex][resourceIndex]+=resourceCount;
         returnCode = -4;
     }
+    else
+    {
+        // Free the safeSequence array after use.
+        free(safeSequence);
+    }
 
     // Unlock the mutex lock to allow other threads to allocate resources.
     pthread_mutex_unlock(&(banker->concurrencyLock));
-    
-    // Free the safeSequence array after use.
-    free(safeSequence);
 
     return returnCode;
 }
@@ -212,7 +214,7 @@ int* Banker_getSafeSequence(struct BankerData *banker)
                     hasFinished[p]=1;
                     // Appends itself to the safe sequence.
                     safeSequence[safeSequenceMarker] = p;
-                    ++safeSequence;
+                    ++safeSequenceMarker;
 
                     // Sets the current banker's state to pseudo safe
                     isStatePseudoSafe = 1;
@@ -247,6 +249,9 @@ void Banker_displayBanker(struct BankerData *data)
     int i,j,k;
     printf("\tBanker Data\n");
     int** matrices[] = {data->resourcesDemandMatrix,data->resourcesAllocatedMatrix,data->resourcesRequiredMatrix};
+    printf("\tAvailable Resources { ");for(k=0;k<data->availableResourcesCount;++k)
+        printf("%d ",data->availableResourcesArray[k]);
+    printf("}\n");
     for(k=0;k<arraylength(matrices);++k)
     {
         printf("\t  %s Matrix:-\n",
