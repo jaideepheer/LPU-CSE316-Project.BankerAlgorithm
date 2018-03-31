@@ -8,12 +8,22 @@ struct UIframe{
     char lborder,rborder,roof,floor;
     char **screen;
 };
+struct UITextField{
+    struct UIframe *parentFrame;
+    int length,linePos,charPos;
+};
 
 void UIframe_init(struct UIframe *frame, int width, int height,
                     char lborder, char rborder, char roof, char floor, int textWrappingEnabled, int bordersEnabled);
-void UIframe_addLine(struct UIframe *frame, char *str, int startPos, int strLen, float position);
-void UIframe_setLine(struct UIframe *frame, int line, char *str, int startPos, int strLen, float position);
+void UIframe_addLine(struct UIframe *frame, char *str, int startPos, float position);
+void UIframe_addLineAndBindTextFeilds(struct UIframe *frame, char *str, int startPos, float position, struct UITextField *textFieldArray);
+void UIframe_addLineChars(struct UIframe *frame, char *str, int startPos, int strLen, float position);
+int UIframe_setLine(struct UIframe *frame, int line, char *str, int startPos, float position);
+int UIframe_setLineChars(struct UIframe *frame, int line, char *str, int startPos, int strLen, float position);
+int UIframe_setLineCharsAndBindTextFeilds(struct UIframe *frame, int line, char *str, int startPos, int strLen, float position, struct UITextField *textFieldArray);
 void UIframe_print(struct UIframe *frame, int x, int y);
 void UIframe_flush(struct UIframe *frame);
-void UI_header();
+
+void UItextField_getFromFrame(struct UITextField* field, struct UIframe* frame, int linePos, int charPos, int length);
+void UItextField_setText(struct UITextField* field, char *str,...);
 #endif // __UI_C__

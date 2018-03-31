@@ -76,20 +76,48 @@ void Banker_destroy(struct BankerData* banker)
 */
 int Banker_freeResource(struct BankerData *banker,int processIndex, int resourceIndex, int resourceCount)
 {
-    // Check for the validity of the resourceIndex and the processIndex. Return if any of them is invalid.
-    if(resourceIndex<0 || resourceIndex>(banker->availableResourcesCount)-1
-        || processIndex<0 || processIndex>(banker->processCount)-1) return -1;
-
-    if(resourceCount > banker->resourcesAllocatedMatrix[processIndex][resourceIndex])
-        resourceCount = banker->resourcesAllocatedMatrix[processIndex][resourceIndex];
     // Use a mutex lock to prevent concurrent access to the banker's data.
     pthread_mutex_lock(&(banker->concurrencyLock));
+
+    // Check for the validity of the resourceIndex and the processIndex. Return if any of them is invalid.
+    if(resourceIndex<0 || resourceIndex>(banker->availableResourcesCount)-1
+        || processIndex<0 || processIndex>(banker->processCount)-1) 
+        {
+            // Unlock the mutex lock to allow other threads to allocate resources.
+            pthread_mutex_unlock(&(banker->concurrencyLock));
+            return -1;
+        }
+    if(resourceCount > banker->resourcesAllocatedMatrix[processIndex][resourceIndex])
+        resourceCount = banker->resourcesAllocatedMatrix[processIndex][resourceIndex];
 
     // Free the resource and return it to the banker.
     // NOTE: the processes requiredRequiredMatrix is not updated as once the process frees its resources, it cannot reallocate them.
     banker->resourcesAllocatedMatrix[processIndex][resourceIndex] -= resourceCount;
     banker->availableResourcesArray[resourceIndex] += resourceCount;
 
+    // Unlock the mutex lock to allow other threads to access the banker's data.
+    pthread_mutex_unlock(&(banker->concurrencyLock));
+    return 1;
+}
+/*
+    Frees all the resources from the caller and returns them to the banker.
+    This is a thread safe function. It uses mutex locks to acomplish thread safety.
+    Parameters: banker,         the BankerData structure storing the current state of the banker.
+                processIndex,   the process to free resources from.
+    Return:  1, on successfull freeing of the resource.
+            -1, if the passed processIndex is invalid.
+*/
+int Banker_freeAllResources(struct BankerData *banker,int processIndex)
+{
+    if(processIndex<0 || processIndex>(banker->processCount)-1) return -1;
+    int i;
+    // Use a mutex lock to prevent concurrent access to the banker's data.
+    pthread_mutex_lock(&(banker->concurrencyLock));
+    for(i=0;i<banker->availableResourcesCount;++i)
+    {
+        banker->availableResourcesArray[i] += banker->resourcesAllocatedMatrix[processIndex][i];
+        banker->resourcesAllocatedMatrix[processIndex][i] = 0;
+    }
     // Unlock the mutex lock to allow other threads to access the banker's data.
     pthread_mutex_unlock(&(banker->concurrencyLock));
     return 1;
@@ -112,17 +140,24 @@ int Banker_freeResource(struct BankerData *banker,int processIndex, int resource
 int Banker_requestResource(struct BankerData *banker,int processIndex, int resourceIndex, int resourceCount)
 {
     // Check for validity of passed parameters.
-    if(resourceIndex<0 || resourceIndex>(banker->availableResourcesCount)-1)return -1;
     if(processIndex<0 || processIndex>(banker->processCount)-1)return -2;
-    if(resourceCount>(banker->resourcesDemandMatrix[processIndex][resourceIndex]) || resourceCount<0)return -3;
-    // Check if requested resources are available.
-    if(resourceCount>banker->availableResourcesArray[resourceIndex])return -5;
-
-    // This will be returned ny the function.
+    // This will be returned the the function.
     int returnCode = 1;
-    
+
     // Use a mutex lock to prevent concurrent resource allocation.
     pthread_mutex_lock(&(banker->concurrencyLock));
+
+    // Check for validity of passed parameters.
+    if(resourceIndex<0 || resourceIndex>(banker->availableResourcesCount)-1)returnCode = -1;
+    if(resourceCount+banker->resourcesAllocatedMatrix[processIndex][resourceIndex]>(banker->resourcesDemandMatrix[processIndex][resourceIndex]) || resourceCount<0)returnCode = -3;
+    // Check if requested resources are available.
+    if(resourceCount>banker->availableResourcesArray[resourceIndex])returnCode = -5;
+    if(returnCode<1)
+    {
+        // Unlock the mutex lock to allow other threads to allocate resources.
+        pthread_mutex_unlock(&(banker->concurrencyLock));
+        return returnCode;
+    }
 
     // Allocate the resources to simulate if the banker will be in a safe state.
     banker->resourcesAllocatedMatrix[processIndex][resourceIndex]+=resourceCount;
@@ -249,7 +284,8 @@ void Banker_displayBanker(struct BankerData *data)
     int i,j,k;
     printf("\tBanker Data\n");
     int** matrices[] = {data->resourcesDemandMatrix,data->resourcesAllocatedMatrix,data->resourcesRequiredMatrix};
-    printf("\tAvailable Resources { ");for(k=0;k<data->availableResourcesCount;++k)
+    printf("\tAvailable Resources { ");
+    for(k=0;k<data->availableResourcesCount;++k)
         printf("%d ",data->availableResourcesArray[k]);
     printf("}\n");
     for(k=0;k<arraylength(matrices);++k)
@@ -266,9 +302,4 @@ void Banker_displayBanker(struct BankerData *data)
             printf("\n");
         }
     }
-}
-int init1(int resourceCount, int *resourcesMAX)
-{
-    printf("resourceCount = %d\n",resourceCount);
-    return 0;
 }

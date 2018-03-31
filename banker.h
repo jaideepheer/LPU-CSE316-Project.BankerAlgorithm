@@ -21,6 +21,7 @@ int Banker_init(struct BankerData *data, int availableResourcesCount,int process
         int* maxResourcesArray, int** resourcesDemandMatrix, int** resourcesAllocatedMatrix);
 int Banker_requestResource(struct BankerData* banker,int processIndex, int resourceIndex, int resourceCount);
 int Banker_freeResource(struct BankerData* banker,int processIndex, int resourceIndex, int resourceCount);
+int Banker_freeAllResources(struct BankerData *banker,int processIndex);
 int* Banker_getSafeSequence(struct BankerData*);
 void Banker_destroy(struct BankerData*);
 
