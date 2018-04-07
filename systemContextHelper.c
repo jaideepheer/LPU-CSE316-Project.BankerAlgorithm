@@ -171,7 +171,7 @@ void printThreadDataScreen(struct systemContext* context, int x, int y)
     {
         for(t=0;t<context->tickBehaviourArray[i].lifeTicks;++t)
         {
-            UItextField_setText(tfarray,"t%.*d",tfarray->length-1,2,t+1);
+            UItextField_setText(tfarray,"t%.*d",tfarray->length-1,t+1);
             UItextField_setText(tfarray+context->tickBehaviourArray[i].lifeTicks,"r%.*d",tfarray->length-1,context->tickBehaviourArray[i].perTickResourceDemandMatrix[t][0]);
             UItextField_setText(tfarray+(2*context->tickBehaviourArray[i].lifeTicks),"%*d",tfarray->length,context->tickBehaviourArray[i].perTickResourceDemandMatrix[t][1]);
             ++tfarray;
