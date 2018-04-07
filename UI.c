@@ -37,6 +37,8 @@ void UIframe_init(struct UIframe *frame, int width, int height,
     frame->bordersEnabled = bordersEnabled;
     frame->cursor[0]=0;
     frame->cursor[1]=0;
+    frame->currentX = 0;
+    frame->currentY = 0;
 
     // Fill the frame with spaces.
     UIframe_flush(frame);
@@ -52,6 +54,11 @@ void UIframe_flush(struct UIframe *frame)
         memset(frame->screen[i], (int)' ', frame->width);
     }
     frame->cursor[0]=0;
+    frame->cursor[1]=0;
+}
+void UIframe_nextLine(struct UIframe *frame)
+{
+    ++frame->cursor[0];
     frame->cursor[1]=0;
 }
 
@@ -129,6 +136,12 @@ int UIframe_internal_setLineChars(struct UIframe *frame, int line, char *str, in
             ++startPos;
             break;
         }
+        else if(str[startPos]=='\t')
+        {
+            // Tabspace char. found...
+            bufferPos+=4;
+            continue;
+        }
         // Check if textFieldArray is given and text field formater '%fn' is present
         else if(textFieldArray!=NULL&&str[startPos]=='%'&&str[startPos+1]=='f')
         {
@@ -177,28 +190,33 @@ int UIframe_setLine(struct UIframe *frame, int line, char *str, int startPos, fl
 }
 
 /*
-    This function prints the passed frame's buffer to the console at the passed X and Y positions,
-    relative to the current cursor's position in the console.
+    This function prints the passed frame's buffer to the console at the passed X and Y positions.
+    If the 'relative' parameter is passed 1, it prints the frame at x-y position relative to cursor's current position.
 */
-void UIframe_print(struct UIframe *frame, int x, int y)
+void UIframe_print(struct UIframe *frame, int x, int y, int relative)
 {
+    // stdout starts y-axis from 1.
+    ++y;
+    // Update frame's currentX and currentY vars.
+    frame->currentX = x;
+    frame->currentY = y;
     int i,j;
-    // Move cursor to y pos. from the current pos.
-    for(i=0;i<y;++i)printf("\n");
+    // Move cursor to given x-y pos.
+    printf("%c[%d;%df",0x1b,y,x);
 
+    // Print roof if enabled.
     if(frame->bordersEnabled)
     {
-        // Move cursor to x pos.
-        for(j=0;j<x;++j)printf(" ");
         // Print the roof.
         for(i=0;i<frame->width+2;++i)printf("%c",frame->roof);
-        printf("\n");
+        // Increment to next line.
+        ++y;
     }
     
     for(i=0;i<frame->height;++i)
     {
-        // Move cursor to x pos.
-        for(j=0;j<x;++j)printf(" ");
+        // Move cursor to next x-y pos.
+        printf("%c[%d;%df",0x1b,y,x);
         // Print border.
         if(frame->bordersEnabled)printf("%c",frame->rborder);
         for(j=0;j<frame->width;++j)
@@ -207,17 +225,20 @@ void UIframe_print(struct UIframe *frame, int x, int y)
         }
         // Print border.
         if(frame->bordersEnabled)printf("%c",frame->lborder);
-        printf("\n");
+        // Increment to next line.
+        ++y;
     }
 
     if(frame->bordersEnabled)
     {
-        // Move cursor to x pos.
-        for(j=0;j<x;++j)printf(" ");
+        // Move cursor to next x-y pos.
+        printf("%c[%d;%df",0x1b,y,x);
         // Print the floor.
         for(i=0;i<frame->width+2;++i)printf("%c",frame->floor);
-        printf("\n");
+        ++y;
     }
+    // Print newline to flush stdout buffer.
+    printf("\n");
 }
 
 /*-----------------------------------------------------*/
@@ -244,7 +265,7 @@ void UItextField_getFromFrame(struct UITextField* field, struct UIframe* frame, 
     This function updates the parent frames buffer with the string passed.
     This works like printf() and accepts a format string wih variable arguments.
 */
-void UItextField_setText(struct UITextField* field, char *str,...)
+void UItextField_internal_settext(struct UITextField* field, char *str, va_list lst)
 {
     // check if parameters are valid
     if(field==NULL)return;
@@ -252,9 +273,45 @@ void UItextField_setText(struct UITextField* field, char *str,...)
     // Flush the field
     memset(start,' ',field->length);
     char postFeildchar = field->parentFrame->screen[field->linePos][field->charPos+field->length];
+    vsnprintf(start,field->length+1,str,lst);
+    field->parentFrame->screen[field->linePos][field->charPos+field->length] = postFeildchar;
+}
+void UItextField_setText(struct UITextField* field, char *str,...)
+{
     va_list args;
     va_start(args,str);
-    vsnprintf(start,field->length+1,str,args);
+    UItextField_internal_settext(field,str,args);
     va_end(args);
-    field->parentFrame->screen[field->linePos][field->charPos+field->length] = postFeildchar;
+}
+
+/*
+    This function refreshes the contents of the given UItextField on the screen.
+    It executes printf to update the text to, the value in buffer, in just the given UItextField on screen.
+*/
+void UItextField_refresh(struct UITextField* field)
+{
+    // Move the cursor to the UItextField's x-y position.
+    printf("%c[%d;%df",0x1b,field->parentFrame->currentY+field->linePos,field->parentFrame->currentX+field->charPos+(field->parentFrame->bordersEnabled>0?1:0));
+    char *start = &field->parentFrame->screen[field->linePos][field->charPos];
+    // Print the new value on screen.
+    printf("%.*s",field->length,start);
+}
+void UItextField_update(struct UITextField* field, char *str,...)
+{
+    va_list args;
+    va_start(args,str);
+    UItextField_internal_settext(field,str,args);
+    va_end(args);
+    UItextField_refresh(field);
+}
+
+void UItextField_setCursorAtFieldEnd(struct UITextField* field)
+{
+    // Move the cursor to the UItextField's x-y position.
+    printf("%c[%d;%df",0x1b,field->parentFrame->currentY+field->linePos,field->parentFrame->currentX+field->charPos+field->length+(field->parentFrame->bordersEnabled>0?1:0));
+}
+
+char* UItextField_getCharPointer(struct UITextField* field)
+{
+    return &(field->parentFrame->screen[field->linePos][field->charPos]);
 }

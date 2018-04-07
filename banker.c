@@ -91,9 +91,9 @@ int Banker_freeResource(struct BankerData *banker,int processIndex, int resource
         resourceCount = banker->resourcesAllocatedMatrix[processIndex][resourceIndex];
 
     // Free the resource and return it to the banker.
-    // NOTE: the processes requiredRequiredMatrix is not updated as once the process frees its resources, it cannot reallocate them.
     banker->resourcesAllocatedMatrix[processIndex][resourceIndex] -= resourceCount;
     banker->availableResourcesArray[resourceIndex] += resourceCount;
+    banker->resourcesRequiredMatrix[processIndex][resourceIndex] += resourceCount;
 
     // Unlock the mutex lock to allow other threads to access the banker's data.
     pthread_mutex_unlock(&(banker->concurrencyLock));
@@ -116,6 +116,7 @@ int Banker_freeAllResources(struct BankerData *banker,int processIndex)
     for(i=0;i<banker->availableResourcesCount;++i)
     {
         banker->availableResourcesArray[i] += banker->resourcesAllocatedMatrix[processIndex][i];
+        banker->resourcesRequiredMatrix[processIndex][i] += banker->resourcesAllocatedMatrix[processIndex][i];
         banker->resourcesAllocatedMatrix[processIndex][i] = 0;
     }
     // Unlock the mutex lock to allow other threads to access the banker's data.

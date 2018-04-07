@@ -25,4 +25,5 @@ int Banker_freeAllResources(struct BankerData *banker,int processIndex);
 int* Banker_getSafeSequence(struct BankerData*);
 void Banker_destroy(struct BankerData*);
 
+void Banker_displayBanker(struct BankerData *data);
 #endif // __BANKER_H__
