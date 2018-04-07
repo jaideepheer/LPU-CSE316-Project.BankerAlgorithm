@@ -73,6 +73,7 @@ void run(struct systemContext* context, int synchronised)
     clrscr();
     // Print the initial system state.
     printRunWindow(context,10,1);
+    //UItextField_update(&context->runWindow->textFieldsArray[1],"Running Simulation...");
     if(synchronised)getch();
 
     // Loop while threads have work to do...
@@ -123,7 +124,7 @@ void run(struct systemContext* context, int synchronised)
             {
                 ++noUpdateIteration;
                 if(noUpdateIteration>1){
-                    printf("Oh no...! No thread proceded for two ticks, deadlock...!\n");
+                    printf("\nOh no...! No thread proceded for two ticks, deadlock...!\n");
                     break;
                 }
             }
@@ -132,4 +133,6 @@ void run(struct systemContext* context, int synchronised)
     }
     // Free the thread memory.
     free(userThreads);
+    UItextField_update(&context->runWindow->textFieldsArray[1],"Simulation ended, press any key to return.");
+    getch();
 }

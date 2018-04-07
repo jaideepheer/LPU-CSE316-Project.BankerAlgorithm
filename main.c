@@ -13,31 +13,34 @@ void initRunFrame(struct systemContext* context)
 
 void start(struct systemContext* context)
 {
-    char **optionsArray = (char*[]){"Run.","Edit Banker Data.","View Thread Behaviour.","Exit."};
+    char **optionsArray = (char*[]){"Run.","View Thread Behaviour.","Exit."};
     struct BankerData* bd = context->bankerData;
     struct UITextField* tf = &context->mainWindow->textFieldsArray[(bd->availableResourcesCount*(bd->processCount+1)*2)];
+    printf("\tLoading...\n");
+    printf("\tPreparing Main Screen...\n");
     prepareMainScreen(context->mainWindow,context);
+    printf("\tPreparing Thread Behaviour Data Screen...\n");
     prepareThreadDataScreen(context->threadDataWindow,context);
     UIframe_nextLine(context->mainWindow->frame);
-    appendOptionsMenuToWindow(context->mainWindow,optionsArray,4,tf);
+    appendOptionsMenuToWindow(context->mainWindow,optionsArray,3,0,tf);
     int loop=1;
     while(loop)
     {
         clrscr();
         printMainScreen(context,10,1);
-        int ch=navigateOptionsMenu(tf,4);
+        int ch=navigateOptionsMenu(tf,3);
         switch(ch)
         {
             case 0: 
             // Run the banker's algorithm simulation using the provided context.(Asynchronously)
                 run(context,0);
             break;
-            case 2:
-                // Edit thread behaviour data.
+            case 1:
+            // Edit thread behaviour data.
                 clrscr();
                 printThreadDataScreen(context,5,1);
             break;
-            case 3:
+            case 2:
             // Exit.
             loop = 0;
             break;
@@ -103,9 +106,9 @@ int main()
     context.runWindow->frame = &runframe;
     initRunFrame(&context);
     //Initialize the run window's text field array. The run window has 7 text fields for each process + 1 text field for current banker data.
-    struct UITextField runtfarray[processCount*7+1];
+    struct UITextField runtfarray[processCount*7+2];
     context.runWindow->textFieldsArray = runtfarray;
-    context.runWindow->textFieldCount = processCount*7+1;
+    context.runWindow->textFieldCount = processCount*7+2;
 
     // Create threadTickBehaviour data array.
     struct threadTickBehaviour tb[processCount];

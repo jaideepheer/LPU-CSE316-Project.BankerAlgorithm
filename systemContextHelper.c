@@ -19,13 +19,14 @@ void prepareRunWindow(struct Window* runWindow, int threadCount)
     for(i=0;i<threadCount;++i)
     {
         // Add lines with text fields...
-        struct UITextField* tfarray = &(runWindow->textFieldsArray[i*7+1]);
+        struct UITextField* tfarray = &(runWindow->textFieldsArray[i*7+2]);
         UIframe_addLineAndBindTextFeilds(runWindow->frame,
             "    Thread %f2:    %f2/%f2       R%f2 x%f2     %f23       %f15",
             0,0,tfarray);
     }
-    ++runWindow->frame->cursor[0];
-    UIframe_addLine(runWindow->frame,"Press any key to continue tick.",0,0.5);
+    UIframe_nextLine(runWindow->frame);
+    UIframe_nextLine(runWindow->frame);
+    UIframe_addLineAndBindTextFeilds(runWindow->frame,"%f45",0,0.26,&runWindow->textFieldsArray[1]);
 }
 
 void printRunWindow(struct systemContext* context, int x, int y)
@@ -68,7 +69,7 @@ void printRunWindow(struct systemContext* context, int x, int y)
             strcat(curRes,tmp);
         }
 
-        tfarray = &context->runWindow->textFieldsArray[i*7+1];
+        tfarray = &context->runWindow->textFieldsArray[i*7+2];
         // Set the text field values.
         UItextField_setText(tfarray+0,"%d",currenttb->processIndex);
         UItextField_setText(tfarray+1,"%d",lasttick+1);
@@ -177,10 +178,10 @@ void printThreadDataScreen(struct systemContext* context, int x, int y)
         }
         tfarray += 2*context->tickBehaviourArray[i].lifeTicks;
     }
-    UItextField_setText(tfarray++,"-Edit");
+    //UItextField_setText(tfarray++,"-Edit");
     UItextField_setText(tfarray,"-Back");
     UIframe_print(context->threadDataWindow->frame,x,y,0);
-    navigateOptionsMenu(--tfarray,2);
+    navigateOptionsMenu(tfarray,1);
 }
 void appendBankerDataToWindow(struct Window* win, struct BankerData* bd, struct UITextField* textFieldArrayStart)
 {
@@ -270,7 +271,7 @@ void printMainScreen(struct systemContext* context, int x, int y)
     }
     UIframe_print(context->mainWindow->frame,x,y,0);
 }
-void appendOptionsMenuToWindow(struct Window* win, char **optionsArray, int optionCount, struct UITextField *rawTextFieldsArray)
+void appendOptionsMenuToWindow(struct Window* win, char **optionsArray, int optionCount, int doOptionsHaveIndexNo, struct UITextField *rawTextFieldsArray)
 {
     int max=0,i,sz;
     for(i=0;i<optionCount;++i)
@@ -285,7 +286,8 @@ void appendOptionsMenuToWindow(struct Window* win, char **optionsArray, int opti
     for(i=0;i<optionCount;++i)
     {
         UIframe_addLineAndBindTextFeilds(win->frame,str,0,0,&rawTextFieldsArray[i]);
-        UItextField_setText(&rawTextFieldsArray[i],"%d| %s",i+1,optionsArray[i]);
+        if(doOptionsHaveIndexNo)UItextField_setText(&rawTextFieldsArray[i],"%d| %s",i+1,optionsArray[i]);
+        else UItextField_setText(&rawTextFieldsArray[i]," | %s",optionsArray[i]);
     }
     free(str);
 }

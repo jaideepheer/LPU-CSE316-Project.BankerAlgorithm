@@ -29,7 +29,7 @@ void prepareRunWindow(struct Window* runWindow, int threadCount);
 void printRunWindow(struct systemContext* context, int x, int y);
 void prepareMainScreen(struct Window* mainWindow, struct systemContext* context);
 void printMainScreen(struct systemContext* context, int x, int y);
-void appendOptionsMenuToWindow(struct Window* win, char **optionsArray, int optionCount, struct UITextField *rawTextFieldsArray);
+void appendOptionsMenuToWindow(struct Window* win, char **optionsArray, int optionCount, int doOptionsHaveIndexNo, struct UITextField *rawTextFieldsArray);
 void appendBankerDataToWindow(struct Window* win, struct BankerData* bd, struct UITextField* textFieldArrayStart);
 void appendThreadBehaviourDataToWindow(struct Window* win, struct threadTickBehaviour* tb, struct UITextField* textFieldArrayStart);
 void printThreadDataScreen(struct systemContext* context, int x, int y);
