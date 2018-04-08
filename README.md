@@ -8,4 +8,4 @@ It is made in accordance with the following:-
 To compile you need gcc, then download all the .c and .h files and execute the `gcc -o run *.c` command.
 
 # How To Run
-To run program the you can compile the program or use the compiled file given in the compiled folder.
+To the run program you can compile it program or use the compiled file given in the /compiled folder.
