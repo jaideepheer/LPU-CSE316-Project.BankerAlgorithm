@@ -22,6 +22,7 @@ void start(struct systemContext* context)
     printf("\tPreparing Thread Behaviour Data Screen...\n");
     prepareThreadDataScreen(context->threadDataWindow,context);
     UIframe_nextLine(context->mainWindow->frame);
+    UIframe_addLine(context->mainWindow->frame,"Use the arrow keys to navigate, press enter to select.",0,0.1);
     appendOptionsMenuToWindow(context->mainWindow,optionsArray,3,0,tf);
     int loop=1;
     while(loop)
@@ -81,7 +82,7 @@ int main()
     struct Window mainwin;
     // Create a frame for the main window.
     struct UIframe mainframe;
-    UIframe_init(&mainframe,100,30,'|','|','-','-',1,1);
+    UIframe_init(&mainframe,96,30,'|','|','-','-',1,1);
     mainwin.frame = &mainframe;
     mainwin.textFieldCount = (processCount+1)*resourceCount*2 + 5 + 4;
     struct UITextField maintfarray[(processCount+1)*resourceCount*2 + 5 + 4];

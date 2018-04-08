@@ -147,7 +147,7 @@ void prepareThreadDataScreen(struct Window* win, struct systemContext* context)
     struct UIframe* frame = win->frame;
     UIframe_addLine(frame,"Thread Behaviour",0,0.5);
     UIframe_addLine(frame,"Here you can view the thread behaviour for the current system configuration.",0,0.5);
-    UIframe_addLine(frame,"-ve resource count means free resource.",0,0.5);
+    UIframe_addLine(frame,"-ve resource count means free the resource.",0,0.5);
     char *str = malloc((8+digitCount(context->threadCount)+1)*sizeof(char));
     int i;
     struct UITextField* tfarray = context->threadDataWindow->textFieldsArray;
